@@ -1,0 +1,152 @@
+---
+title: "Wildire Project Plots"
+author: "Blake Bullwinkel"
+date: "11/28/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r include=FALSE}
+library(sp)
+library(rgdal)
+library(ggplot2)
+library(ggalt)
+library(lubridate)
+library(extrafont)
+library(data.table)
+library(zoo)
+loadfonts(device = "win")
+setwd('C:/Users/Blake Bullwinkel/Documents/Harvard/Environmental Modeling/Final Project')
+```
+
+```{r include=FALSE}
+# Read in the California data
+cali_data = read.csv('mapdataall.csv')
+
+# Enforce latitude and longitude limits to remove incorrect data
+cali_data = cali_data[(cali_data$incident_longitude > -125 & cali_data$incident_longitude < -115 & cali_data$incident_latitude > 32 & cali_data$incident_latitude < 44),]
+
+# Convert relevant date fields to POSIXct objects
+cali_data$incident_dateonly_created = ymd(cali_data$incident_dateonly_created)
+cali_data$incident_dateonly_extinguished = ymd(cali_data$incident_dateonly_extinguished)
+cali_data = cali_data[(cali_data$incident_dateonly_created > '2010-01-01'),]
+
+# Create a data.table object
+cali_dt = setDT(cali_data)
+
+# Calculate the total number of wildires in CA each month
+cali_monthly_fires = cali_dt[, .N, by=.(year(incident_dateonly_created), month(incident_dateonly_created))]
+cali_monthly_fires$date = as.yearmon(paste(cali_monthly_fires$year, cali_monthly_fires$month), "%Y %m")
+
+# Calculate the total acres burned by wildfires in CA each month
+cali_monthly_acres = cali_data[, sum(incident_acres_burned), by=.(year(incident_dateonly_created), month(incident_dateonly_created))]
+cali_monthly_acres$date = as.yearmon(paste(cali_monthly_acres$year, cali_monthly_acres$month), "%Y %m")
+```
+
+```{r echo=TRUE}
+# Load Map of US States
+mapUSm<- readOGR(dsn="US48", layer="US_48states")  
+
+# Fortify polygons
+states.df = fortify(mapUSm[c(24),]) # State Outlines
+
+# Plot the sampling locations
+cali_fire_map <- ggplot() + 
+  geom_point(data=cali_data, aes(x=incident_longitude, y=incident_latitude, size=incident_acres_burned), color="red", alpha=0.2, pch=16) +
+  geom_polygon(data=states.df, aes(long,lat,group=group), fill=NA, size=.5) +
+  geom_path(data=states.df, aes(long,lat,group=group), color="black") +
+  labs(title="Area Burned by CA Wildfires 2013-2020",
+       y="Latitude", 
+       x="Longitude", 
+       color="Area Burned (acres)", # legend title not working
+       fill="Area Burned (acres)", # legend title not working
+       subtitle="2013-2020") +
+  coord_fixed() + theme_minimal()
+
+plot(cali_fire_map)
+```
+
+
+```{r}
+# Create a histogram showing the number of wildires in California per month from 2013-2020
+cali_monthly_fires_plot <- ggplot(cali_monthly_fires, aes(x=date, y=N)) + 
+  geom_bar(stat="identity", fill="steelblue") + 
+  #geom_smooth(method="loess", se=F) + 
+  labs(subtitle="2013-2020", 
+       y="Number of Fires", 
+       x="Month", 
+       title="Number of CA Wildfires per Month", 
+       caption = "Source: Cal Fire (fire.ca.gov)") +
+  theme(text=element_text(size=14), 
+        panel.border = element_blank(),
+        panel.grid.major = element_line(color = "lightgrey"),
+        panel.grid.minor = element_line(color = "lightgrey"),
+        panel.background = element_rect(fill = "white"),
+        plot.background = element_rect(fill = "white"))
+
+plot(cali_monthly_fires_plot)
+```
+
+```{r}
+# Create a histogram showing the total acres burned by wildires in California per month from 2013-2020
+
+options(scipen=999) # turn off scientific notation
+
+cali_monthly_acres_plot <- ggplot(cali_monthly_acres, aes(x=date, y=V1)) + 
+  geom_bar(stat="identity", fill="steelblue") + 
+  #geom_smooth(method="loess", se=F) + 
+  labs(subtitle="2013-2020", 
+       y="Area Burned (acres)", 
+       x="Month", 
+       title="Area Burned by CA Wildfires per Month", 
+       caption = "Source: Cal Fire (fire.ca.gov)") +
+  theme(text=element_text(size=14), 
+        panel.border = element_blank(),
+        panel.grid.major = element_line(color = "lightgrey"),
+        panel.grid.minor = element_line(color = "lightgrey"),
+        panel.background = element_rect(fill = "white"),
+        plot.background = element_rect(fill = "white"))
+
+plot(cali_monthly_acres_plot)
+```
+
+```{r}
+# Fire event in Marin County, CA:
+#   incident date created: 2020-08-18
+#   incident date extinguished: 2020-10-02
+#   incident acres burned: 4929
+sanfran_fire = cali_data[(cali_data$incident_dateonly_created >= '2020-08-01') & (cali_data$incident_dateonly_created <= '2020-10-07') & (cali_data$incident_county == 'Marin'),]
+
+# Filter wildfire dataframe for San Francisco Meropolitan Area
+sanfran_msa_data = cali_data[(cali_data$incident_county == 'San Francisco' |
+                              cali_data$incident_county == 'Alameda' |
+                              cali_data$incident_county == 'Marin' |
+                              cali_data$incident_county == 'Contra Costa' |
+                              cali_data$incident_county == 'San Mateo'),]
+```
+
+```{r}
+sanfran_msa_plot <- ggplot(sanfran_msa_data, aes(x=incident_dateonly_created, y=incident_acres_burned)) + 
+  geom_point(aes(col=incident_county)) + 
+  labs(subtitle="2013-2020", 
+       y="Area Burned (acres)", 
+       x="Date",
+       color="County",
+       title="Area Burned by Wildfires in the San Francisco MSA", 
+       caption = "Source: Cal Fire (fire.ca.gov)") +
+  theme(text=element_text(size=14), 
+        panel.border = element_blank(),
+        panel.grid.major = element_line(color = "lightgrey"),
+        panel.grid.minor = element_line(color = "lightgrey"),
+        panel.background = element_rect(fill = "white"),
+        plot.background = element_rect(fill = "white"))
+
+plot(sanfran_msa_plot)
+```
+
+
+
+
