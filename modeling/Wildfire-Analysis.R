@@ -39,6 +39,7 @@ options(scipen=999) # turn off scientific notation
 states.df = fortify(mapUSm[c(24),]) # State Outlines
 
 # Plot the California wildfires
+tiff("Presentation Plots/cali_fire_map.tiff", units='in', width=10, height=6, res=300)
 cali_fire_map <- ggplot() + 
   geom_point(data=cali_data, aes(x=incident_longitude, y=incident_latitude, size=incident_acres_burned), color="red", alpha=0.2, pch=16) +
   geom_polygon(data=states.df, aes(long,lat,group=group), fill=NA, size=.5) +
@@ -52,7 +53,7 @@ cali_fire_map <- ggplot() +
   coord_fixed() + theme_minimal()
 
 plot(cali_fire_map)
-
+dev.off()
 
 #### Monthly California Fires Analysis 2013-2020 ####
 # Create a data.table object
@@ -67,6 +68,7 @@ cali_monthly_acres = cali_data[, sum(incident_acres_burned), by=.(year(incident_
 cali_monthly_acres$date = as.yearmon(paste(cali_monthly_acres$year, cali_monthly_acres$month), "%Y %m")
 
 # Create a histogram showing the number of wildires in California per month from 2013-2020
+tiff("Presentation Plots/cali_monthly_fires_plot.tiff", units='in', width=10, height=6, res=300)
 cali_monthly_fires_plot <- ggplot(cali_monthly_fires, aes(x=date, y=N)) + 
   geom_bar(stat="identity", fill="steelblue") + 
   #geom_smooth(method="loess", se=F) + 
@@ -83,8 +85,10 @@ cali_monthly_fires_plot <- ggplot(cali_monthly_fires, aes(x=date, y=N)) +
         plot.background = element_rect(fill = "white"))
 
 plot(cali_monthly_fires_plot)
+dev.off()
 
 # Create a histogram showing the total acres burned by wildires in California per month from 2013-2020
+tiff("Presentation Plots/cali_monthly_acres_plot.tiff", units='in', width=10, height=6, res=300)
 cali_monthly_acres_plot <- ggplot(cali_monthly_acres, aes(x=date, y=V1)) + 
   geom_bar(stat="identity", fill="steelblue") + 
   #geom_smooth(method="loess", se=F) + 
@@ -101,6 +105,7 @@ cali_monthly_acres_plot <- ggplot(cali_monthly_acres, aes(x=date, y=V1)) +
         plot.background = element_rect(fill = "white"))
 
 plot(cali_monthly_acres_plot)
+dev.off()
 
 #### San Francisco Smoke Event 2020-08-19 to 2020-10-07 ####
 # Wildfire in Marin County, CA:
@@ -122,6 +127,7 @@ sanfran_msa_data = sanfran_msa_data[(sanfran_msa_data$incident_latitude < 39
                                      & sanfran_msa_data$incident_latitude > 37.1),]
 
 # Plot the size of wildfires in the San Francisco MSA from 2013-2020
+tiff("Presentation Plots/sanfran_msa_plot.tiff", units='in', width=10, height=6, res=300)
 sanfran_msa_plot <- ggplot(sanfran_msa_data, aes(x=incident_dateonly_created, y=incident_acres_burned)) + 
   geom_point(aes(col=incident_county)) + 
   labs(subtitle="2013-2020", 
@@ -138,6 +144,7 @@ sanfran_msa_plot <- ggplot(sanfran_msa_data, aes(x=incident_dateonly_created, y=
         plot.background = element_rect(fill = "white"))
 
 plot(sanfran_msa_plot)
+dev.off()
 
 # Load Map of US States
 mapMSA <- readOGR(dsn="cb_2018_us_cbsa_5m", layer="cb_2018_us_cbsa_5m")  
@@ -146,6 +153,7 @@ mapMSA <- readOGR(dsn="cb_2018_us_cbsa_5m", layer="cb_2018_us_cbsa_5m")
 sanfran.msa.df = fortify(mapMSA[c(193),]) # County Outlines
 
 # Plot the San Francisco MSA fires
+tiff("Presentation Plots/sanfran_fire_map.tiff", units='in', width=10, height=6, res=300)
 sanfran_fire_map <- ggplot() + 
   geom_point(data=sanfran_msa_data, aes(x=incident_longitude, y=incident_latitude, size=incident_acres_burned), color="red", alpha=0.2, pch=16) +
   geom_polygon(data=sanfran.msa.df, aes(long,lat,group=group), fill=NA, size=.5) +
@@ -159,3 +167,4 @@ sanfran_fire_map <- ggplot() +
   coord_fixed() + theme_minimal()
 
 plot(sanfran_fire_map)
+dev.off()
