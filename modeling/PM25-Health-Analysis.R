@@ -5,6 +5,15 @@
 #Purpose: Exploratory analysis of PM2.5 air quality data with health data
 #####################################################################
 
+# Attach Dependencies
+library(extrafont)
+library(ggplot2)
+library(lmodel2)
+library(MASS)
+library(rgdal)
+library(jsonlite)
+setwd("~/Documents/School 20-21/Environmental Modeling/Wildfire-Smoke")
+
 #### County Health Data ####
 # Read in csv Files
 disease = read.csv(file=paste0("Disease_data/Prevalence_2007.csv"))
